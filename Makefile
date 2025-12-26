@@ -5,8 +5,8 @@ DEBUGFLAGS = -g -O0
 all: bubble
 
 # Build bubblesort
-bubblesort/bubblesort: bubblesort/bubblesort.c
-	$(CC) $(CFLAGS) bubblesort/bubblesort.c -o bubblesort/bubblesort
+bubblesort/bubblesort: bubblesort/bubblesort.c sort_utils.c sort_utils.h
+	$(CC) $(CFLAGS) bubblesort/bubblesort.c sort_utils.c -o bubblesort/bubblesort
 
 # Alias for building
 bubble: bubblesort/bubblesort
