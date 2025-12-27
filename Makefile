@@ -26,8 +26,15 @@ merge: mergesort/mergesort
 run-merge: mergesort/mergesort
 	./mergesort/mergesort
 
+# Debug builds with debug symbols
+debug-bubble: bubblesort/bubblesort.c sort_utils.c sort_utils.h
+	$(CC) $(CFLAGS) $(DEBUGFLAGS) bubblesort/bubblesort.c sort_utils.c -o bubblesort/bubblesort
+
+debug-merge: mergesort/mergesort.c sort_utils.c sort_utils.h
+	$(CC) $(CFLAGS) $(DEBUGFLAGS) mergesort/mergesort.c sort_utils.c -o mergesort/mergesort
+
 # Clean all built files
 clean:
 	rm -f bubblesort/bubblesort mergesort/mergesort
 
-.PHONY: all bubble run-bubble merge run-merge clean
+.PHONY: all bubble run-bubble merge run-merge debug-bubble debug-merge clean
