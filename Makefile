@@ -11,29 +11,29 @@ all: bubble merge
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-algorithms/bubblesort: algorithms/bubblesort.o $(UTILS_OBJ)
+bubblesort: algorithms/bubblesort.o $(UTILS_OBJ)
 	$(CC) $(CFLAGS) $^ -o $@
 
-algorithms/mergesort: algorithms/mergesort.o $(UTILS_OBJ)
+mergesort: algorithms/mergesort.o $(UTILS_OBJ)
 	$(CC) $(CFLAGS) $^ -o $@
 
-bubble: algorithms/bubblesort
-merge: algorithms/mergesort
+bubble: bubblesort
+merge: mergesort
 
-run-bubble: algorithms/bubblesort
-	./algorithms/bubblesort
+run-bubble: bubblesort
+	./bubblesort
 
-run-merge: algorithms/mergesort
-	./algorithms/mergesort
+run-merge: mergesort
+	./mergesort
 
 debug-bubble: CFLAGS += $(DEBUGFLAGS)
-debug-bubble: algorithms/bubblesort
+debug-bubble: bubblesort
 
 debug-merge: CFLAGS += $(DEBUGFLAGS)
-debug-merge: algorithms/mergesort
+debug-merge: mergesort
 
 clean:
-	rm -f algorithms/bubblesort algorithms/mergesort
+	rm -f bubblesort mergesort
 	rm -f algorithms/*.o algorithms/*.d
 	rm -f utils/*.o utils/*.d
 
