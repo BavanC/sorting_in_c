@@ -1,9 +1,8 @@
 #include "../sort_utils.h"
-#define LIST_SIZE 25
 
 int main() {
     FILE* fptr;
-    char* unsorted_numbers_filename = "unsorted_numbers.txt";
+    char* unsorted_numbers_filename = LIST_FILE;
     int unsorted_ints[LIST_SIZE];
     int sorted_ints[LIST_SIZE];
     

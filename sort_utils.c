@@ -34,12 +34,12 @@ int read_file_into_array(FILE* fptr, int* intlist_cursor) {
     return 0;
 }
 
-int dump_integer_array_contents (int* intlist, long list_size) {
+int dump_integer_array_contents (int* intlist, long array_size) {
     int i = 0;
     do {
         printf("%d, ", intlist[i]);
         i++;
-    } while (i < list_size - 1);
+    } while (i < array_size - 1);
     printf("%d\n", intlist[i]);
 
     return 0;

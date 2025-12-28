@@ -1,100 +1,184 @@
 #include "../sort_utils.h"
 
-#define LIST_SIZE 25
+struct ArrayCursor {
+    int* lower_bound;
+    int* upper_bound;
+    int* position;
+};
+
+
+struct ArrayCursor init_arraycursor(
+    int* array_start_ptr, 
+    size_t array_size, 
+    int starting_cursor_offset
+) {
+    return (struct ArrayCursor) {
+        array_start_ptr,
+        array_start_ptr + array_size - 1,
+        array_start_ptr + starting_cursor_offset
+    };
+}
+
+
+int reset_array_cursor(struct ArrayCursor* ac_ptr) {
+    ac_ptr->position = ac_ptr->lower_bound;
+    return 0;
+}
+
+
+int is_cursor_within_bounds(struct ArrayCursor* ac_ptr) {
+    return (
+        ac_ptr->position >= ac_ptr->lower_bound && 
+        ac_ptr->position <= ac_ptr->upper_bound
+    );
+}
+
+
+int min(size_t a, size_t b) {
+    return a < b ? a : b;
+}
+
+
+int copy_ints_to_array(
+    struct ArrayCursor* from_cursor_ptr,
+    struct ArrayCursor* to_cursor_ptr
+) {
+    int copied_int_count = 0;
+
+    while (is_cursor_within_bounds(from_cursor_ptr) && is_cursor_within_bounds(to_cursor_ptr)) {
+        *to_cursor_ptr->position = *from_cursor_ptr->position;
+        
+        from_cursor_ptr->position++;
+        to_cursor_ptr->position++;
+        copied_int_count++;
+    }
+
+    return copied_int_count;
+}
+
+
+int merge_subarrays(
+    struct ArrayCursor *source_cursor_ptr,
+    struct ArrayCursor *buffer_cursor_ptr,
+    size_t block_size,
+    size_t left_subarray_size
+) {
+    int* left_start = source_cursor_ptr->lower_bound;
+    int* right_start = left_start + left_subarray_size;
+    size_t right_subarray_size = block_size - left_subarray_size;
+
+    struct ArrayCursor left_subcursor = init_arraycursor(left_start, left_subarray_size, 0);
+    struct ArrayCursor right_subcursor = init_arraycursor(right_start, right_subarray_size, 0);
+
+    while (is_cursor_within_bounds(buffer_cursor_ptr)) {
+        if (*left_subcursor.position <= *right_subcursor.position) {
+            *buffer_cursor_ptr->position = *left_subcursor.position;
+            left_subcursor.position++;
+        } else {
+            *buffer_cursor_ptr->position = *right_subcursor.position;
+            right_subcursor.position++;
+        }
+        buffer_cursor_ptr->position++;
+
+        if (!is_cursor_within_bounds(&left_subcursor)) {
+            copy_ints_to_array(&right_subcursor, buffer_cursor_ptr);
+        } else if (!is_cursor_within_bounds(&right_subcursor)) {
+            copy_ints_to_array(&left_subcursor, buffer_cursor_ptr);
+        }
+    }
+
+    return 0;
+}
+
+
+int mergesort_blocks(
+    struct ArrayCursor *sorted_cursor,
+    size_t block_size,
+    size_t subarray_size,
+    int* buffer_start_ptr
+) {
+    if (block_size == 1) return 0;
+
+    struct ArrayCursor block_cursor, buffer_cursor;
+    
+    while (is_cursor_within_bounds(sorted_cursor)) {
+        // if we are in the final block, it might not actually fill the space we expect
+        // since this can only happen on the final loop, we can change block_size itself
+        block_size = min(block_size, sorted_cursor->upper_bound - sorted_cursor->position + 1);
+        block_cursor = init_arraycursor(sorted_cursor->position, block_size, 0);
+        buffer_cursor = init_arraycursor(buffer_start_ptr, block_size, 0);
+        
+        // merge the left and right subarrays of the block if they both have valid values then
+        // copy numbers from the buffer back into the sorted array, error if counts dont match
+        if (block_size > subarray_size) {
+            merge_subarrays(&block_cursor, &buffer_cursor, block_size, subarray_size);
+            reset_array_cursor(&buffer_cursor);
+        } else {
+            if (copy_ints_to_array(&block_cursor, &buffer_cursor) != (int)block_size) goto exit_on_error;
+            reset_array_cursor(&block_cursor);
+            reset_array_cursor(&buffer_cursor);
+        }
+        if (copy_ints_to_array(&buffer_cursor, &block_cursor) != (int)block_size) goto exit_on_error;
+        
+        // the while loop overshoot means we can actually take the position of the block cursor directly
+        sorted_cursor->position = block_cursor.position;
+    }
+    return 0;
+
+    exit_on_error:
+        printf("mergesort_blocks errored\n");
+        dump_integer_array_contents(buffer_cursor.lower_bound, block_size);
+        dump_integer_array_contents(block_cursor.lower_bound, block_size);
+        return 1; // this is caught and routed to the main functions error dump too
+}
 
 
 int main() {
-    FILE* fptr;
-    char* unsorted_numbers_filename = "unsorted_numbers.txt";
-    int unsorted_ints[LIST_SIZE];
-    int sorted_ints[LIST_SIZE];
-    int holding_ints[LIST_SIZE];
-    size_t array_index;
-    for (array_index = 0; array_index < LIST_SIZE; array_index++) {
-        holding_ints[array_index] = 0;
-    }
-    
-    fptr = fopen(unsorted_numbers_filename, "r");
+    char* unsorted_numbers_filename = LIST_FILE;
+    FILE* fptr = fopen(unsorted_numbers_filename, "r");
     if (fptr == NULL) {
-        printf("file does not exist\n");
+        printf("File does not exist\n");
         return 1;
     }
 
-    read_file_into_array(fptr, unsorted_ints);
-    read_file_into_array(fptr, sorted_ints);
-    printf("unsorted array: \n");
-    dump_integer_array_contents(unsorted_ints, LIST_SIZE);
+    int integer_list[LIST_SIZE];
+    read_file_into_array(fptr, integer_list);
+    printf("unsorted array:\n");
+    dump_integer_array_contents(integer_list, LIST_SIZE);
 
-    int* intlist_cursor = sorted_ints;
-    int left_val, right_val;
-    long comparison_count = 0;
-    while (intlist_cursor < sorted_ints + LIST_SIZE - 1) {
-        left_val = *intlist_cursor;
-        right_val = *(intlist_cursor + 1);
-        if (left_val > right_val) {
-            *intlist_cursor = right_val;
-            *(intlist_cursor + 1) = left_val;
-        }
+    struct ArrayCursor sorted_cursor = init_arraycursor(integer_list, LIST_SIZE, 0);
+    size_t block_size, subarray_size;
+    int holding_buffer[LIST_SIZE];
+    
+    for (block_size = 1; block_size <= LIST_SIZE; block_size = block_size * 2) {
+        // the function does nothing and exits on the first loop due to block_size = 1
+        // which then allows subarray size to always be set to the previous block size
+        if (mergesort_blocks(&sorted_cursor, block_size, subarray_size, holding_buffer)) goto exit_on_error;
         
-        comparison_count++;
-        intlist_cursor = intlist_cursor + 2;
+        reset_array_cursor(&sorted_cursor);
+        subarray_size = block_size;
+    }
+    if (block_size > LIST_SIZE) { // handling the final merge if needed
+        size_t final_block_size = block_size / 2;
+        struct ArrayCursor buffer_cursor = init_arraycursor(holding_buffer, LIST_SIZE, 0);
+        
+        // both subarrays are ordered already, so its just one final merge with asymmetrically sized blocks
+        // since its still a bisection, we only need to pass the size of one block
+        merge_subarrays(&sorted_cursor, &buffer_cursor, LIST_SIZE, final_block_size);
+        reset_array_cursor(&buffer_cursor);
+        if (copy_ints_to_array(&buffer_cursor, &sorted_cursor) != LIST_SIZE) goto full_buffer_dump;
     }
 
-    printf("first level sorting: \n");
-    dump_integer_array_contents(sorted_ints, LIST_SIZE);
-
-    size_t subarray_size = 2;
-    intlist_cursor = sorted_ints;
-    int* holding_cursor = holding_ints;
-    int* left_subarray_cursor;
-    int* right_subarray_cursor;
-
-    while (intlist_cursor < sorted_ints + LIST_SIZE - 1) {
-        printf("block to sort: \n");
-        dump_integer_array_contents(intlist_cursor, subarray_size * 2);
-        
-        left_subarray_cursor = intlist_cursor;
-        right_subarray_cursor = intlist_cursor + subarray_size;
-
-        while (holding_cursor < holding_ints + subarray_size * 2) {
-            left_val = *left_subarray_cursor;
-            right_val = *right_subarray_cursor;
-
-            if (left_val <= right_val) {
-                *holding_cursor = left_val;
-                left_subarray_cursor++;
-            } else {
-                *holding_cursor = right_val;
-                right_subarray_cursor++;
-            }
-            holding_cursor++;
-
-            dump_integer_array_contents(holding_ints, 2 * subarray_size);
-            if (left_subarray_cursor >= intlist_cursor + subarray_size) {
-                while (right_subarray_cursor < intlist_cursor + 2 * subarray_size) {
-                    *holding_cursor = *right_subarray_cursor;
-                    right_subarray_cursor++;
-                    holding_cursor++;
-                }
-                dump_integer_array_contents(holding_ints, 2 * subarray_size);
-            } else if (right_subarray_cursor >= intlist_cursor + 2 * subarray_size) {
-                while (left_subarray_cursor < intlist_cursor + subarray_size) {
-                    *holding_cursor = *left_subarray_cursor;
-                    left_subarray_cursor++;
-                    holding_cursor++;
-                }
-                dump_integer_array_contents(holding_ints, 2 * subarray_size);
-            }
-        }
-
-        for (array_index = 0; array_index < 2 * subarray_size; array_index++) {
-            *(intlist_cursor + array_index) = holding_ints[array_index];
-        }
-        intlist_cursor = intlist_cursor + 2 * subarray_size;
-        holding_cursor = holding_ints;
-        dump_integer_array_contents(sorted_ints, LIST_SIZE);
-    }
-    dump_integer_array_contents(sorted_ints, LIST_SIZE);
-
+    printf("final sorted list:\n");
+    dump_integer_array_contents(integer_list, LIST_SIZE);
     return 0;
+
+
+    // error dumping
+    full_buffer_dump:
+        printf("final merge error\n");
+        dump_integer_array_contents(holding_buffer, LIST_SIZE);
+    exit_on_error:
+        dump_integer_array_contents(integer_list, LIST_SIZE);
+        return 1;
 }
