@@ -1,1 +1,17 @@
-v_long_unsorted_numbers.txt
+# lists for testing
+*unsorted_numbers.txt
+
+# object files
+*.o
+*.a
+*.so
+
+# executables
+bubblesort
+mergesort
+
+# dependency files
+*.d
+
+# debug info
+*.dSYM

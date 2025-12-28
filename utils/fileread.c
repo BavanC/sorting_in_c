@@ -1,4 +1,4 @@
-#include "sort_utils.h"
+#include <fileread.h>
 
 int ascii_to_positive_int(char *raw_int)
 {
@@ -18,32 +18,21 @@ int ascii_to_positive_int(char *raw_int)
     return result;
 }
 
-int read_file_into_array(FILE *fptr, int *intlist_cursor)
+int read_file_into_array(FILE *fptr, ArrayCursor *intlist_cursor)
 {
     char buf[100];
 
-    while (fgets(buf, sizeof(buf), fptr) != NULL){
+    while (fgets(buf, sizeof(buf), fptr) != NULL && is_cursor_within_bounds(intlist_cursor)){
         if (ascii_to_positive_int(buf) == -1) {
             printf("Integer overflow!\n");
         }
         else {
-            *intlist_cursor = ascii_to_positive_int(buf);
-            intlist_cursor++;
+            *intlist_cursor->position = ascii_to_positive_int(buf);
+            intlist_cursor->position++;
         }
     }
 
     rewind(fptr);
-    return 0;
-}
-
-int dump_integer_array_contents (int *intlist, long array_size)
-{
-    int i = 0;
-    do {
-        printf("%d, ", intlist[i]);
-        i++;
-    } while (i < array_size - 1);
-    printf("%d\n", intlist[i]);
-
+    reset_array_cursor(intlist_cursor);
     return 0;
 }

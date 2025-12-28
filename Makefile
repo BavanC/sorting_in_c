@@ -1,40 +1,42 @@
+INCLUDE_DIR = include
+UTILS_SRC = $(wildcard utils/*.c)
+UTILS_OBJ = $(UTILS_SRC:.c=.o)
+
 CC = gcc
-CFLAGS = -std=c17 -Wall -Wextra -pedantic
+CFLAGS = -std=c17 -I$(INCLUDE_DIR) -Wall -Wextra -pedantic -MMD -MP
 DEBUGFLAGS = -g -O0
 
 all: bubble merge
 
-# Build bubblesort
-bubblesort/bubblesort: bubblesort/bubblesort.c sort_utils.c sort_utils.h
-	$(CC) $(CFLAGS) bubblesort/bubblesort.c sort_utils.c -o bubblesort/bubblesort
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Alias for building
-bubble: bubblesort/bubblesort
+algorithms/bubblesort: algorithms/bubblesort.o $(UTILS_OBJ)
+	$(CC) $(CFLAGS) $^ -o $@
 
-# Build and run bubblesort
-run-bubble: bubblesort/bubblesort
-	./bubblesort/bubblesort
+algorithms/mergesort: algorithms/mergesort.o $(UTILS_OBJ)
+	$(CC) $(CFLAGS) $^ -o $@
 
-# Build mergesort
-mergesort/mergesort: mergesort/mergesort.c sort_utils.c sort_utils.h
-	$(CC) $(CFLAGS) mergesort/mergesort.c sort_utils.c -o mergesort/mergesort
+bubble: algorithms/bubblesort
+merge: algorithms/mergesort
 
-# Alias for building
-merge: mergesort/mergesort
+run-bubble: algorithms/bubblesort
+	./algorithms/bubblesort
 
-# Build and run mergesort
-run-merge: mergesort/mergesort
-	./mergesort/mergesort
+run-merge: algorithms/mergesort
+	./algorithms/mergesort
 
-# Debug builds with debug symbols
-debug-bubble: bubblesort/bubblesort.c sort_utils.c sort_utils.h
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) bubblesort/bubblesort.c sort_utils.c -o bubblesort/bubblesort
+debug-bubble: CFLAGS += $(DEBUGFLAGS)
+debug-bubble: algorithms/bubblesort
 
-debug-merge: mergesort/mergesort.c sort_utils.c sort_utils.h
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) mergesort/mergesort.c sort_utils.c -o mergesort/mergesort
+debug-merge: CFLAGS += $(DEBUGFLAGS)
+debug-merge: algorithms/mergesort
 
-# Clean all built files
 clean:
-	rm -f bubblesort/bubblesort mergesort/mergesort
+	rm -f algorithms/bubblesort algorithms/mergesort
+	rm -f algorithms/*.o algorithms/*.d
+	rm -f utils/*.o utils/*.d
+
+-include $(wildcard */*.d)
 
 .PHONY: all bubble run-bubble merge run-merge debug-bubble debug-merge clean
