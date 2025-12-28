@@ -1,5 +1,5 @@
 # lists for testing
-*unsorted_numbers.txt
+unsorted_lists/
 
 # object files
 *.o
