@@ -34,11 +34,6 @@ int is_cursor_within_bounds(struct ArrayCursor* ac_ptr) {
 }
 
 
-int min(size_t a, size_t b) {
-    return a < b ? a : b;
-}
-
-
 int copy_ints_to_array(
     struct ArrayCursor* from_cursor_ptr,
     struct ArrayCursor* to_cursor_ptr
@@ -61,32 +56,29 @@ int merge_subarrays(
     struct ArrayCursor *source_cursor_ptr,
     struct ArrayCursor *buffer_cursor_ptr,
     size_t block_size,
-    size_t left_subarray_size
+    size_t L_subarray_size
 ) {
-    int* left_start = source_cursor_ptr->lower_bound;
-    int* right_start = left_start + left_subarray_size;
-    size_t right_subarray_size = block_size - left_subarray_size;
+    // Left subarray
+    int* L_start = source_cursor_ptr->lower_bound;
+    struct ArrayCursor L_subcursor = init_arraycursor(L_start, L_subarray_size, 0);
 
-    struct ArrayCursor left_subcursor = init_arraycursor(left_start, left_subarray_size, 0);
-    struct ArrayCursor right_subcursor = init_arraycursor(right_start, right_subarray_size, 0);
+    // Right subarray, starting after end of the left one, going to the end of the block
+    int* R_start = L_start + L_subarray_size;
+    size_t R_subarray_size = block_size - L_subarray_size;
+    struct ArrayCursor R_subcursor = init_arraycursor(R_start, R_subarray_size, 0);
+    
+    struct ArrayCursor* lower_subcursor_ptr;
+    do { // find and copy the lower of the two values into the buffer, then increment cursors
+        lower_subcursor_ptr = *L_subcursor.position <= *R_subcursor.position ? &L_subcursor : &R_subcursor;
+        *buffer_cursor_ptr->position = *lower_subcursor_ptr->position;
 
-    while (is_cursor_within_bounds(buffer_cursor_ptr)) {
-        if (*left_subcursor.position <= *right_subcursor.position) {
-            *buffer_cursor_ptr->position = *left_subcursor.position;
-            left_subcursor.position++;
-        } else {
-            *buffer_cursor_ptr->position = *right_subcursor.position;
-            right_subcursor.position++;
-        }
         buffer_cursor_ptr->position++;
+        lower_subcursor_ptr->position++;
+    } while (is_cursor_within_bounds(buffer_cursor_ptr) && is_cursor_within_bounds(lower_subcursor_ptr));
 
-        if (!is_cursor_within_bounds(&left_subcursor)) {
-            copy_ints_to_array(&right_subcursor, buffer_cursor_ptr);
-        } else if (!is_cursor_within_bounds(&right_subcursor)) {
-            copy_ints_to_array(&left_subcursor, buffer_cursor_ptr);
-        }
-    }
-
+    // if we've exhausted the array we just copied a value from, dump the other array entirely in order
+    struct ArrayCursor* upper_subcursor_ptr = lower_subcursor_ptr == &L_subcursor ? &R_subcursor : &L_subcursor;
+    copy_ints_to_array(upper_subcursor_ptr, buffer_cursor_ptr);
     return 0;
 }
 
@@ -104,7 +96,7 @@ int mergesort_blocks(
     while (is_cursor_within_bounds(sorted_cursor)) {
         // if we are in the final block, it might not actually fill the space we expect
         // since this can only happen on the final loop, we can change block_size itself
-        block_size = min(block_size, sorted_cursor->upper_bound - sorted_cursor->position + 1);
+        block_size = MIN(block_size, sorted_cursor->upper_bound - sorted_cursor->position + 1);
         block_cursor = init_arraycursor(sorted_cursor->position, block_size, 0);
         buffer_cursor = init_arraycursor(buffer_start_ptr, block_size, 0);
         
