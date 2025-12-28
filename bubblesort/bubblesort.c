@@ -1,8 +1,9 @@
 #include "../sort_utils.h"
 
-int main() {
-    FILE* fptr;
-    char* unsorted_numbers_filename = LIST_FILE;
+int main() 
+{
+    FILE *fptr;
+    char *unsorted_numbers_filename = LIST_FILE;
     int unsorted_ints[LIST_SIZE];
     int sorted_ints[LIST_SIZE];
     
@@ -16,7 +17,7 @@ int main() {
     read_file_into_array(fptr, sorted_ints);
     // dump_integer_array_contents(unsorted_ints);
 
-    int* intlist_cursor = sorted_ints;
+    int *intlist_cursor = sorted_ints;
     int sorted_so_far = 0;
     int left_val, right_val;
     long comparison_count = 0;
