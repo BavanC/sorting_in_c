@@ -1,6 +1,7 @@
 #include <helpers.h>
+#include <mergesort.h>
 
-unsigned long long operation_count = 0;
+static unsigned long long *op_count_ptr = NULL;
 
 int copy_ints_bounded(ArrayCursor *from_cursor_ptr, ArrayCursor *to_cursor_ptr)
 {
@@ -12,7 +13,7 @@ int copy_ints_bounded(ArrayCursor *from_cursor_ptr, ArrayCursor *to_cursor_ptr)
         from_cursor_ptr->position++;
         to_cursor_ptr->position++;
         copied_int_count++;
-        operation_count++; // copy
+        (*op_count_ptr)++; // copy
     }
 
     return copied_int_count;
@@ -34,9 +35,9 @@ int merge_subarrays(ArrayCursor *source_cursor_ptr, ArrayCursor *buffer_cursor_p
     ArrayCursor *lower_subcursor_ptr;
     do { // find and copy the lower of the two values into the buffer, then increment cursors
         lower_subcursor_ptr = *L_subcursor.position <= *R_subcursor.position ? &L_subcursor : &R_subcursor;
-        operation_count++; // comparison
+        (*op_count_ptr)++; // comparison
         *buffer_cursor_ptr->position = *lower_subcursor_ptr->position;
-        operation_count++; // copy
+        (*op_count_ptr)++; // copy
 
         buffer_cursor_ptr->position++;
         lower_subcursor_ptr->position++;
@@ -88,51 +89,35 @@ int mergesort_blocks(ArrayCursor *sorted_cursor, int *buffer_start_ptr,
 }
 
 
-int main()
+void mergesort(int *array, size_t size, int *holding_buffer, unsigned long long *operation_count)
 {
-    char *unsorted_numbers_filename = LIST_FILE;
-    FILE *fptr = fopen(unsorted_numbers_filename, "r");
-    if (fptr == NULL) {
-        printf("File does not exist\n");
-        return 1;
-    }
+    op_count_ptr = operation_count;
 
-    int integer_list[LIST_SIZE];
-    ArrayCursor sorted_cursor = init_arraycursor(integer_list, LIST_SIZE, 0);
-    
-    read_file_into_array(fptr, &sorted_cursor);
-    // printf("unsorted array:\n");
-    // dump_integer_array_contents(integer_list, LIST_SIZE);
+    ArrayCursor sorted_cursor = init_arraycursor(array, size, 0);
 
     size_t block_size, subarray_size;
-    int holding_buffer[LIST_SIZE];
-    
-    for (block_size = 1; block_size * 2 < LIST_SIZE; block_size = block_size * 2) {
+
+    for (block_size = 1; block_size * 2 < size; block_size = block_size * 2) {
         // the function does nothing and exits on the first loop due to block_size = 1
         // which then allows subarray size to always be set to the previous block size
         if (mergesort_blocks(&sorted_cursor, holding_buffer, block_size, subarray_size)) goto exit_on_error;
-        
+
         reset_array_cursor(&sorted_cursor);
         subarray_size = block_size;
     }
 
     // we always need one final merge of two ordered blocks, but the bisection point is likely not central
-    ArrayCursor buffer_cursor = init_arraycursor(holding_buffer, LIST_SIZE, 0);
-    merge_subarrays(&sorted_cursor, &buffer_cursor, LIST_SIZE, block_size);
+    ArrayCursor buffer_cursor = init_arraycursor(holding_buffer, size, 0);
+    merge_subarrays(&sorted_cursor, &buffer_cursor, size, block_size);
     reset_array_cursor(&buffer_cursor);
-    if (copy_ints_bounded(&buffer_cursor, &sorted_cursor) != LIST_SIZE) goto full_buffer_dump;
+    if (copy_ints_bounded(&buffer_cursor, &sorted_cursor) != (int)size) goto full_buffer_dump;
 
-    printf("number of operations: %llu\n", operation_count);
-    // printf("final sorted list:\n");
-    // dump_integer_array_contents(integer_list, LIST_SIZE);
-    return 0;
-
+    return;
 
     // error dumping
     full_buffer_dump:
         printf("final merge error\n");
-        dump_integer_array_contents(holding_buffer, LIST_SIZE);
+        dump_integer_array_contents(holding_buffer, size);
     exit_on_error:
-        dump_integer_array_contents(integer_list, LIST_SIZE);
-        return 1;
+        dump_integer_array_contents(array, size);
 }

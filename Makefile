@@ -6,37 +6,26 @@ CC = gcc
 CFLAGS = -std=c17 -I$(INCLUDE_DIR) -Wall -Wextra -pedantic -MMD -MP
 DEBUGFLAGS = -g -O0
 
-all: bubble merge
+all: sorting_algorithms
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-bubblesort: algorithms/bubblesort.o $(UTILS_OBJ)
+sorting_algorithms: main.o algorithms/bubblesort.o algorithms/mergesort.o $(UTILS_OBJ)
 	$(CC) $(CFLAGS) $^ -o $@
 
-mergesort: algorithms/mergesort.o $(UTILS_OBJ)
-	$(CC) $(CFLAGS) $^ -o $@
+run: sorting_algorithms
+	./sorting_algorithms
 
-bubble: bubblesort
-merge: mergesort
-
-run-bubble: bubblesort
-	./bubblesort
-
-run-merge: mergesort
-	./mergesort
-
-debug-bubble: CFLAGS += $(DEBUGFLAGS)
-debug-bubble: bubblesort
-
-debug-merge: CFLAGS += $(DEBUGFLAGS)
-debug-merge: mergesort
+debug: CFLAGS += $(DEBUGFLAGS)
+debug: sorting_algorithms
 
 clean:
-	rm -f bubblesort mergesort
+	rm -f sorting_algorithms
+	rm -f main.o main.d
 	rm -f algorithms/*.o algorithms/*.d
 	rm -f utils/*.o utils/*.d
 
 -include $(wildcard */*.d)
 
-.PHONY: all bubble run-bubble merge run-merge debug-bubble debug-merge clean
+.PHONY: all run debug clean
