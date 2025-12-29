@@ -18,24 +18,27 @@ int main()
     read_file_into_array(fptr, &list_cursor);
     fclose(fptr);
 
-    printf("Select sorting algorithm (bubblesort/mergesort): ");
-    char algorithm[20];
-    if (scanf("%19s", algorithm) != 1) {
+    printf("Select sorting algorithm ([b]ubblesort/[m]ergesort): ");
+    char algorithm;
+    if (scanf(" %c", &algorithm) != 1) {
         printf("Invalid input\n");
         return 1;
     }
 
     unsigned long long operation_count = 0;
+    int holding_buffer[LIST_SIZE];
 
-    if (strcmp(algorithm, "bubblesort") == 0) {
-        bubblesort(integer_list, LIST_SIZE, &operation_count);
-    } else if (strcmp(algorithm, "mergesort") == 0) {
-        int holding_buffer[LIST_SIZE];
-        mergesort(integer_list, LIST_SIZE, holding_buffer, &operation_count);
-    } else {
-        printf("Unknown algorithm: %s\n", algorithm);
-        printf("Please use 'bubblesort' or 'mergesort'\n");
-        return 1;
+    switch (algorithm) {
+        case 'b':
+            bubblesort(integer_list, LIST_SIZE, &operation_count);
+            break;
+        case 'm':
+            mergesort(integer_list, LIST_SIZE, holding_buffer, &operation_count);
+            break;
+        default:
+            printf("Unknown algorithm: %c\n", algorithm);
+            printf("Please use 'b' or 'm'\n");
+            return 1;
     }
 
     printf("number of operations: %llu\n", operation_count);
